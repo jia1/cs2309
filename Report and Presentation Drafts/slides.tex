@@ -1,0 +1,333 @@
+\documentclass{beamer}
+
+\usepackage{comment}
+\usepackage[utf8]{inputenc}
+
+% \usecolortheme{}
+\usetheme{Warsaw}
+
+\begin{comment}
+Antibes Bergen Berkeley Berlin Copenhagen
+Darmstadt Dresden Frankfurt Goettingen Hannover
+Ilmenau JuanLesPins Luebeck Madrid Malmoe
+Marburg Montpellier PaloAlto Pittsburgh Rochester
+Singapore Szeged Warsaw boxes CambridgeUS
+
+albatross beaver beetle crane dolphin
+dove fly lily orchid rose seagull
+seahorse whale wolverine
+\end{comment}
+
+\title{CS2309 Project Presentation: Web Crawling}
+\author{Lim Jia Yee} 
+
+\begin{document}
+
+\frame{\titlepage}
+
+\section{Problem}
+\begin{frame}
+\frametitle{Problem: All thanks to you.}
+\begin{itemize}
+\item It is easy to create content on the web.
+\item It is easier for the web to expand now thanks to you.
+\item It is easiest to take web search for granted.
+\end{itemize}
+\end{frame}
+
+\subsection{Motivation}
+\begin{frame}
+\frametitle{Motivation}
+\begin{itemize}
+\item Ensure web search remains optimised; prevent world destruction.
+\item Vested interest in learning from data (i.e. machine learning).
+\item Brainchild: Exploring the possibility of enhancing web crawling with decisions based on data.
+\end{itemize}
+\end{frame}
+
+\subsection{Relevance}
+\begin{frame}
+\frametitle{Relevance}
+\begin{itemize}
+\item Educate on the considerations of designing a web crawler, or equivalent systems.
+\item Increasing the scope of machine learning as a solution.
+\item Target Audience: People who maintain focused web crawlers
+\end{itemize}
+\end{frame}
+
+\subsection{Solution}
+\begin{frame}
+\frametitle{Three-Part Solution}
+\begin{enumerate}
+\item Requesting
+\item Deciding
+\item Parsing
+\end{enumerate}
+\end{frame}
+
+\section{Web Crawling}
+\begin{frame}
+\frametitle{Single Web Crawler Algorithm}
+\begin{enumerate}
+\item Decide on a good hyperlink to begin crawling from.
+\item Fetch the corresponding web page of the hyperlink in (1).
+\item Parse for all hyperlinks and store them.
+\item Process the contents of the web page.
+\item From the storage of hyperlinks, extract an unvisited one.
+\item Repeat from (2).
+\end{enumerate}
+\end{frame}
+
+\subsection{Context}
+\begin{frame}
+\frametitle{Graph Problem}
+\begin{itemize}
+\item The World Wide Web is the graph.
+\item Directed, unweighted, unknown.
+\item Vertices: Web pages and their contents
+\item Edges: Hyperlinks
+\end{itemize}
+\end{frame}
+
+\subsection{Graph Algorithms}
+\begin{frame}
+\frametitle{Graph Exploration}
+\begin{itemize}
+\item Breadth-first search
+\item Depth-first search
+\item Iterative deepening depth-first search
+\item Beam search (i.e. enhanced best-first search)
+\end{itemize}
+\end{frame}
+
+\subsection{Algorithm Analysis}
+\begin{frame}
+\frametitle{Complexity Analysis}
+\begin{itemize}
+\item Breadth-first search: Memory
+\item Depth-first search: Narrow scope
+\item Iterative deepening depth-first search: Data structure
+\item Beam search: Accuracy of the heuristic
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Solution Part I: Graph Exploration}
+\begin{itemize}
+\item Modified depth-first search
+\item Does not always push to the stack
+\end{itemize}
+\end{frame}
+
+\section{Decision Making}
+\begin{frame}
+\frametitle{Alert: Another Performance Bottleneck}
+\begin{itemize}
+\item Fetching the web page and parsing it.
+\item Why not decide beforehand whether we should even do it?
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Solution Part II: Reinforcement Learning}
+\begin{itemize}
+\item Why?
+\item No training data.
+\item Unknown until experienced.
+\end{itemize}
+\end{frame}
+
+\subsection{Reinforcement Learning and MDP}
+\begin{frame}
+\frametitle{Markov Decision Process (MDP)}
+\begin{enumerate}
+\item State
+\item Action: To parse or not to parse, that is the question.
+\item Reward
+\item Policy
+\end{enumerate}
+\end{frame}
+
+\subsection{Components of MDP}
+\begin{frame}
+\frametitle{Reinforcement Learning: State}
+\begin{enumerate}
+\item How relevant the current host is.
+\item How relevant the previous host was.
+\item How many web pages belonging to the current host were actually parsed, and not skipped.
+\item How relevant the URL is.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}
+\frametitle{Reinforcement Learning: State}
+\begin{itemize}
+\item Real-valued states $ \Rightarrow $ infinite states.
+\item Reduce dimension via intervals.
+\item Result: $ 2^4 = 16 $ (high and low features) states.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Reinforcement Learning: Action}
+\begin{itemize}
+\item Parse or not.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Reinforcement Learning: Reward}
+\begin{itemize}
+\item Number of ``high" features in the state.
+\item No additional penalisation of ``low" features in the state.
+\end{itemize}
+\end{frame}
+
+\subsection{Finite State MDP}
+\begin{frame}
+\frametitle{Reinforcement Learning: Policy}
+\begin{itemize}
+\item Value Iteration Algorithm
+\item Policy Iteration Algorithm
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Value Iteration Algorithm}
+\begin{enumerate}
+\item Assign random \textbf{\underline{true values}} to each of the states.
+\item For every state, calculate a new true value based on its neighbours' current true values.
+\item Terminate if any of the true values in (2) changes by more than a user-specified $ \delta $. Else, repeat from (2).
+\end{enumerate}
+\end{frame}
+
+\begin{frame}
+\frametitle{Value Iteration Algorithm: Limitations}
+\begin{itemize}
+\item Slow convergence.
+\item Do we want true value or policy?
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Policy Iteration Algorithm}
+\begin{enumerate}
+\item Create a random \textbf{\underline{policy}} (i.e. assign a random action for each state).
+\item Calculate the true value of each state given the policy in (1).
+\item Based on these new true values, choose the optimal action for each state.
+\item Terminate if none of the actions in (3) is changed. Else, repeat from (2).
+\end{enumerate}
+\end{frame}
+
+\section{Parsing}
+\begin{frame}
+\frametitle{Solution Part III: Parsing}
+\begin{itemize}
+\item Not the main focus, but needed for testing.
+\item Define ``relevant": Keywords in the web page match the list of ``search words" prepared beforehand.
+\end{itemize}
+\end{frame}
+
+\subsection{RAKE}
+\begin{frame}
+\frametitle{Rapid Automatic Keyword Extraction (RAKE)}
+\begin{enumerate}
+\item Remove punctuation and special characters.
+\item Remove stop words.
+\item Stem the remaining words or phrases.
+\item Find the degree of each word or phrase in (3).
+\item Count the frequency of each word or phrase in (3).
+\item Compute \textit{score = $ \frac{degree}{frequency} $} for each word or phrase in (3).
+\end{enumerate}
+\end{frame}
+
+\begin{frame}
+\frametitle{RAKE: Specifications}
+\begin{itemize}
+\item Assumes input is in standard English.
+\item Numbers are also extracted.
+\end{itemize}
+\end{frame}
+
+\subsection{word2vec}
+\begin{frame}
+\frametitle{Similarity Measure: word2vec}
+\begin{itemize}
+\item Words as vectors.
+\item Similarity $ \Rightarrow $ distance between words.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{word2vec: Limitations}
+\begin{itemize}
+\item Bias towards exact words.
+\item Resolve by classifying a range as ``similar".
+\end{itemize}
+\end{frame}
+
+\section{Experiments}
+\begin{frame}
+\frametitle{Three-Part Experiment}
+\begin{itemize}
+\item Modified DFS
+\item Policy Iteration
+\item RAKE and word2vec
+\end{itemize}
+\end{frame}
+
+\subsection{Modified DFS}
+\begin{frame}
+\frametitle{Modified DFS versus BFS}
+\begin{itemize}
+\item Reduced execution time (approx. 40\%)
+\item Reduced memory usage (approx. 40\%)
+\item Not verified: ``Quality" of the visited web pages
+\item Can be verified via logic, but the algorithm will have to be even more accurate in targeting particular kinds of URL.
+\end{itemize}
+\end{frame}
+
+\subsection{Policy Iteration}
+\begin{frame}
+\frametitle{Final Policy}
+\begin{itemize}
+\item Policy was ``False" for every state $ \Rightarrow $ nothing will ever be parsed.
+\item Policy remains the same despite increase of $ \gamma $, number of iterations, and increase in penalty for skipping.
+\item Conclusion:
+\begin{itemize}
+\item Insufficient domain knowledge,
+\item Should not define parameters by hand, and/or
+\item Unsuitable library
+\end{itemize}
+\item Try model-free learning instead.
+\end{itemize}
+\end{frame}
+
+\subsection{Phrase Similarity}
+\begin{frame}
+\frametitle{Phrase Similarity: Generality}
+\begin{itemize}
+\item Keywords which are more general than search words can still score very high in similarity.
+\item Discovered: ``Relevance" and ``similarity" are not the same.
+\end{itemize}
+\end{frame}
+
+\subsection{Future Work}
+\begin{frame}
+\frametitle{Future Work: Beam Search and URL Analysis}
+\begin{enumerate}
+\item Rank vertices by their edges (URLs).
+\item Add only the first $ N $ ranked edges to the heap.
+\end{enumerate}
+\end{frame}
+
+\section{}
+\begin{frame}
+\frametitle{Conclusion}
+\begin{itemize}
+\item Failure: Nope. Instead, you have \textit{succeeded} in proving that this failed. Try something else.
+\item Failure: Is when you give up.
+\end{itemize}
+\end{frame}
+
+\end{document}

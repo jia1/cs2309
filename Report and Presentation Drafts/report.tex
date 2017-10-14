@@ -1,0 +1,801 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{authblk}
+\usepackage{comment}
+\usepackage{hyperref}
+\usepackage{listings}
+\lstset{language=Python}
+
+\title{Reinforcement Learning and the Web Crawling Problem}
+\author{Lim Jia Yee}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\begin{abstract}
+Web crawlers browse the World Wide Web to provide users with the most up-to-date data. However, due to the ease of user content creation, the World Wide Web is an arguably infinite information space. As such, executing classical search algorithms such as breadth-first search and depth-first search for web crawling becomes less practical. One solution to this impractical computing cost would be distributed web crawling \cite{bib-01}, which transfers the cost to hardware. This paper offers an alternative to this hardware-intensive solution, implementing reinforcement learning in web crawlers.
+\end{abstract}
+\newpage
+
+% 1
+\section{Introduction}
+\label{sec:1}
+\begin{comment}
+(Propose a problem in any area of computer science that you want to solve. Please articulate the motivation, relevance, and technical challenge of the problem.)
+\end{comment}
+
+% 1.1
+\subsection{Motivation}
+Under limited computational resources, such as time and space, it is not practical to crawl the web without ultimately deciding whether a web page deserves to be parsed, as parsing drains resources during crawling, while decision making can be a largely offline process.
+\medskip
+
+Machine learning has been a key solution to many problems involving data and trends, some of which include classification, prediction, and even decision-making. This paper aims to explore the possibility of enhancing web crawling through data-backed decisions in machine learning.
+
+% 1.2
+\subsection{Relevance}
+As users become increasingly connected, the World Wide Web expands exponentially due to an explosion of user content. Web crawling algorithms must be consistently maintained and enhanced wherever possible in order to fulfil the requirements of the users despite the burgeoning web. Some of the most critical requirements include:
+\begin{enumerate}
+	\item Fast crawling
+	\item Relevant results
+	\item Widespread search
+\end{enumerate}
+
+\paragraph{This paper aims to propose an implementation a single-process web crawler which meets the requirements above.} The focus will be on decision-making, as this paper proposes to optimise web crawlers through planning and informed decision-making. Deciding beforehand whether a web page should even be parsed will save considerable resources as long as the resources needed to make a decision is less than the resources needed for parsing. As such, the web crawling problem can be summarised into the following problem statement:
+\medskip
+
+\textbf{\textit{How can a web crawling algorithm remain optimal as the World Wide Web expands?}}
+
+% 1.3
+\subsection{Expected Input and Output}
+An end user will pass in a seed URL and a list of search words and/or phrases. A default seed URL will be used if not specified. The expected output will be a list of relevant URLs and/or content. A URL is deemed as relevant if its corresponding content contains keywords associated with the search words or phrases in meaning (e.g. banana and yellow fruit).
+\medskip
+
+The user may also configure other components of the program, such as the decision boundaries for the decision-making and relevance-evaluation component.
+
+% 1.4
+\subsection{Challenges}
+There are numerous technical components to an effective crawler. For crawling to be fast, optimised exploration and parsing programs are required. However, being able to decide what should not be parsed in the first place based on shorter text (i.e. URL itself) will certainly speed up the crawling process. As such, the potential technical challenges to such smart crawling include:
+
+\begin{enumerate}
+	\item Optimising the general crawling algorithm (i.e. graph exploration algorithm).
+	\item Deciding if a web page should be visited and parsed based on the URL.
+	\begin{enumerate}
+		\item Assembling features from which the relevance of the content can be deduced from the URL.
+	\end{enumerate}
+	\item Deciding if a web page is relevant when parsing it.
+	\begin{enumerate}
+		\item Formulating the relevance score for content to confirm (1).
+		\item Setting the decision boundary or threshold between relevant and irrelevant content.
+	\end{enumerate}
+	\item Formulating the reward for parsing relevant content \textbf{and} not parsing irrelevant content.
+	\item Optimising the parsing performance.
+	
+	\item Determining the seed (i.e. start point) web pages.
+	\item Parallelising the algorithm for scalability.
+\end{enumerate}
+
+% 1.5
+\subsection{Structure} The structure of this paper is as follows:
+\begin{enumerate}
+	\item Decomposing web crawling into a graph exploration and decision making problem.
+	\item Pre-analysis of the current graph exploration algorithms.
+	\item Reinforcement learning (RL) and its possible role in web crawling.
+	\item Pre-analysis of the effectiveness and feasibility of RL in web crawling.
+	\item Proposed implementation.
+	\item Experimental results and analysis.
+\end{enumerate}
+\newpage
+
+% 2
+\section{Problem Decomposition}
+\label{sec:2}
+
+% 2.1
+\subsection{Graph Exploration}
+
+% 2.1.1
+\subsubsection{Graph}
+The graph is a graph of the World Wide Web and its \textbf{web pages}. The graph is a \textit{directed, unweighted, and unknown} graph. The graph is directed because a web page may have a link to another page, but that page may not necessarily have a link back to the page which the click came from, unweighted because there is initially no insight about web pages with specific characteristics, and unknown because these web pages are dynamic.
+
+% 2.1.2
+\subsubsection{Vertices and Edges}
+The \textit{vertices} are the web pages, and the \textit{edges} are the universal resource locators (URL) which lead users to a specific web page (a vertex) \cite{bib-02}.
+
+% 2.1.3
+\subsubsection{Other Information}
+The graph may be subjected to changes over time as users are free to create, update, or delete their content, so there is no database of all vertices and edges.
+
+% 2.2
+\subsection{Decision Making}
+The cycle of creating requests to a host, and parsing the corresponding web page is a time-consuming process. Deciding whether to parse certain web content based on a smaller set of data, such as URL, will considerably save computational resources, as irrelevant web content can simply be skipped and not parsed.
+\newpage
+
+% 3
+\section{(Discussion) Solution Part I: Graph Exploration}
+\label{sec:3}
+\begin{comment}
+(Explain why the proposed method is reasonable and how you come to choosing it over other alternatives that you have considered.) \\
+\end{comment}
+
+As graph exploration is a key component to web crawling, some of the existing graph exploration algorithms will be discussed and analysed here.
+
+% 3.1
+\subsection{Depth-First Search (DFS)}
+DFS is likely to create continuous requests to the same host as it searches through each host exhaustively \cite{bib-03} before proceeding with the next same-level neighbour. This not only leads to the exploration of a narrow scope of hosts, but also the unnecessarily exhaustive exploration of these hosts.
+\medskip
+
+Furthermore, the relevance of a set of web page(s) or a website can often be determined within a minimal page depth \cite{bib-04}.
+
+\begin{comment}
+Note that there may be a few exceptions of the proposed scenario above, i.e. Wikipedia has many hyperlinks and citations on its pages, and it will be favourable to search through them exhaustively.
+\end{comment}
+
+% 3.2
+\subsection{Breadth-First Search (BFS)}
+On the other hand, while BFS is less likely to encounter the above problems, it is likely incur impractical memory costs as the frontier may expand faster than dequeueing. The space complexity of these algorithms is influenced by the size of the queue or stack containing the unvisited vertices.
+
+% 3.3
+\subsection{Iterative Deepening Depth-First Search (IDDFS)}
+IDDFS sets an incrementing depth level for each iteration of DFS, and the maximum depth level could either be the distance of the graph or a user-specified number.
+\medskip
+
+For example, the $ n^{th} $ iteration of IDDFS is a DFS which treats all vertices which are $ n $ edges away from the seed as terminal vertices (regardless of whether the out-degree of these vertices) and there will no searching beyond these ``terminal vertices".
+\medskip
+
+Hence, IDDFS is a configurable program which can be configured to explore the hosts adequately rather than exhaustively while keeping memory usage in check.
+\medskip
+
+However, the current IDDFS algorithm will lead to $ n $ visits to the vertices nearer to the seed for $ n $ iterations. This means that a data structure to track references to parent vertices is needed, and this may slow down the exploration.
+\newpage
+
+% 3.4
+\subsection{Beam Search}
+\label{sec:3.4}
+Beam search is a graph search algorithm modified from BFS. The unvisited vertices are ranked and thus dequeued in the order of how close these vertices are in reaching the search target based on predefined heuristics and predictions.
+\medskip
+
+Therefore, the effectiveness of beam search is mainly dependent on the accuracy of the heuristics in judging the vertices. The lower-ranked vertices will be pruned and there will no further exploration on these vertices.
+\medskip
+
+Hence, there will always be a fixed (user-specified) number of unvisited vertices after every iteration, and this bounds the space complexity to just the maximum out-degree of any single vertex instead of an accumulation of all unvisited vertices.
+
+% 3.5
+\subsection{Complexity Analysis}
+\paragraph{Time}
+As the graph of the World Wide Web is unknown, both BFS and DFS will have a general runtime of O($ E $), as each vertex is explored once. $ E $ is the number of links explored. Checking if a particular vertex was visited is in O(1), as all incoming edges will be the same (disregarding short links), and these edges can be stored in a hash table.
+\medskip
+
+For IDDFS, the general runtime would be O($ E $) for the same reasons above, but there will be additional overhead in maintaining a linked data structure which both BFS and DFS do not need, as they never needed to return to the seed vertex.
+\medskip
+
+For beam search, the general runtime would be O($ E\Delta GlogN $), where $ N $ is the (user-specified) size of the ``frontier". $ \Delta G $ is the maximum out-degree of a vertex in the graph. A fixed-size min-heap and max-heap with the same vertices are to be maintained.
+\medskip
+
+The unvisited vertices will be added to the min-heap to track which vertices are to be removed from the max-heap. After any addition, the vertex at the root will be removed from the heaps. The max-heap will synchronise with the min-heap and produce a heap with the most ``promising" vertex at the root. These heap operations result in the runtime above as a single heap operation costs O($ logN $).
+\newpage
+
+\paragraph{Space}
+The average to worst space complexity of BFS is O($ w $), where $ w $ is the maximum \textit{``width"} of the graph, i.e. maximum number of vertices of the same distance away from the start vertex \cite{bib-05}. For a tree, the \textit{``width"} of a graph is:
+\medskip
+
+\textit{Width = (Branch $ Factor)^{Height} $}
+\medskip
+
+The above definition may be extended to fit a general undirected and unweighted graph.
+\medskip
+
+On the other hand, the worst space complexity of DFS is O($ h $), where $ h $ is the \textit{``height"} of the graph (maximum distance of the graph). And since the World Wide Web is more sparse than it is dense across hosts \cite{bib-06}:
+\medskip
+
+$ height < width \Rightarrow $ DFS has a lower space complexity.
+\medskip
+
+For IDDFS, the space complexity increases with the search depth, and is thus O($ h $). However, there may be additional overhead in storing a linked structure compared to the other algorithms, which can use arrays.
+\medskip
+
+For beam search, the worst space complexity is O($ N $), where $ N $ is the size of the heap.
+
+% 3.6
+\subsection{Insights and Decisions}
+\label{sec:3.6}
+The analyses of existing graph exploration algorithms have raised much thought about the nature of the World Wide Web. They are:
+\begin{enumerate}
+	\item Exhaustive crawling of a narrow scope of hosts sacrifices the diversity of the search under limited resources.
+	\item To convenience users, most information should be available in the shallower parts of the website.
+	\item Based on (2), websites can become uninformative in the deeper parts of the website.
+	\item DFS may be modified such that it does not traverse to vertices without any outgoing edges to unvisited vertices, but abandon search where appropriate, as can be seen in the example of IDDFS.
+\end{enumerate}
+Based on the above insights, this paper will be using a modified DFS as the graph exploration solution in order to reduce the potentially massive space consumption and remain a diverse exploration. This modified DFS algorithm restricts the number of consecutive addition of edges from vertices belonging to the same host (\hyperref[sec:6.2.2]{Section 6.2.2 Modified DFS}).
+\newpage
+
+% 4
+\section{(Discussion) Solution Part II: Reinforcement Learning (RL)}
+% 4.1
+\subsection{Introduction}
+RL is a category of machine learning, where the software (the ``agent") learns from its environment instead of an existing database. The general scenario consists of an agent in a specific state. This agent makes observations, performs actions, and is rewarded or punished when the outcome is reviewed \cite{bib-07}. The software aims to have its cumulative rewards converge towards a global maximum eventually, although the global maximum may fluctuate from time to time due to changes in the environment. Conversely, the software may aim to have its cumulative punishment converge towards a global minimum.
+\medskip
+
+The following subsection will define the Markov decision process (MDP), a mathematical framework which models the components of decision making and outcomes \cite{bib-08} and the relevant formulae which will be used in this paper to conduct RL.
+\newpage
+
+% 4.2
+\subsection{Markov Decision Process}
+\label{sec:4.2}
+The MDP is a tuple in the form of $ (S, A, P_{sa}, \gamma, R) $ \cite{bib-08} where:
+
+\paragraph{$ \boldsymbol{S} $ is a set of \textit{states}.}
+
+\paragraph{$ \boldsymbol{A} $ is a set of \textit{actions}.} The action would be the act of either skipping a URL (denoted by \textit{False}) or parsing the corresponding web page (denoted by \textit{True}).
+
+\paragraph{$ \boldsymbol{P_{sa}} $ are the state transition probabilities.} They are the probability distributions of \textit{S} given some state and action. E.g. $ P_{sa}(x) $ or $ T(s, a, x) $ where $ s, x \in S $ is the probability of $ s \Rightarrow x $ with action $ a $.
+\medskip
+
+In this paper, the state transition probabilities will be derived via analysis and not modelling based on sample trials. There are $ 2^4 $ simplified states (True or False for each of the features).
+
+\begin{comment}
+Recall that a simplified state is expressed as a tuple: \\
+
+\textit{( Predicted Relevance via URL, \\
+\indent Host Parse-Skip Ratio, \\
+\indent Mean Avg. Relevance (Previous Host), \\
+\indent Mean Avg. Relevance (Current Host)} )
+\end{comment}
+
+\paragraph{$ R $ is the reward function.} The function input is a state, $ s $, and the function output is the reward for getting to that state. In this paper, the reward will be in the range [0, 1].
+
+\paragraph{$ \boldsymbol{\gamma} $ is the discount factor.} The discount factor makes up the coefficients of the reward output given by the formula below:
+\medskip
+
+$ \boldsymbol{\gamma^0 R(s_0, a_0) + \gamma^1 R(s_1, a_1) + \gamma^2 R(s_2, a_2) + \gamma^3 R(s_3, a_3) + ...} $
+\medskip
+
+\textit{where} $ s_{x+1} = P_{s_xa_x} $ \textit{(i.e. probability of 1)}
+\medskip
+
+Since the discount factor is in the range $ [0, 1) $, having higher powers of $ \gamma $ as the coefficients of the later rewards ensures:
+\begin{enumerate}
+	\item Precedence of immediate rewards over delayed rewards \cite{bib-09} as the possibility of the agent terminating before such rewards are received should be taken into account.
+	\item Convergence of the reward output so that rewards for different sequences of actions remain comparable.
+\end{enumerate}
+\newpage
+
+% 4.3
+\subsection{Solutions for Finite MDPs}
+The previous section defines the basic components in MDP and their exact formulations in the context of this paper. This section will discuss how MDPs can be solved and optimise decision making by maximising the final reward value through a specific sequence of actions.
+
+\paragraph{Other Definitions}
+\paragraph{Policy ($ \boldsymbol{\pi} $)} is a function which maps a state to an action (i.e. $ a = \pi(s)) $.
+
+\paragraph{Value function ($ \boldsymbol{V^\pi} $) for the policy $ \pi $} is the expected sum of discounted rewards from a starting state $ s \in S $. Recall $ a = \pi(s) $. The value function is given by the formula below:
+\medskip
+
+$ V^{\pi}(s) = E [ R(s_0) + \gamma R(s_1) + \gamma^2 R(s_2) + ... ] $ where $ s_0 \Rightarrow s_1 \Rightarrow s_2 \Rightarrow ... $
+
+\begin{comment}
+Note that the value function of a fixed policy satisfies the \href{https://en.wikipedia.org/wiki/Bellman_equation}{Bellman Equation}, i.e. $ V^{\pi}(s) = R(s) + \gamma \text{ } \sum_x P_{s(a = \pi(s))}(x) V^{\pi}(x) $ \textit{for every x $ \in $ S (the set of states)}.
+\end{comment}
+
+\paragraph{State Utility/True Value ($ \boldsymbol{U(s)} $)} is the immediate reward for the specified state, plus the expected discounted reward if the agent acted optimally from that point on. The state utility is independent from the policy $ \pi $.
+
+\begin{comment} I.e. $ U(s) = R(s) + \gamma \text{ \textbf{max}}_a \sum_x P_{sa}(x) U(x) $ \textit{for every x $ \in $ S (the set of states)}.
+\end{comment}
+
+\paragraph{Policy Iteration Algorithm} There are two classical algorithms which can solve finite-state MDPs. In this paper, the policy iteration algorithm will be implemented \cite{bib-10}. The policy iteration algorithm is as follows :
+
+\begin{enumerate}
+	\item Create a random policy by selecting a random action for each state.
+	\item Repeat:
+	\begin{enumerate}
+		\item Compute the true value of each state based on the current policy (i.e. $ V^\pi(s) = \sum P_{sa}(x)(R(s) + \gamma V^\pi(x)) $ \textit{where s, x $ \in $ S}).
+		\item Update the policy to fit the optimal state-action pair.
+		\item If the policy remains the same from the previous iteration, terminate and return the policy.
+	\end{enumerate}
+\end{enumerate}
+\newpage
+
+% 5
+\section{Proposed Solution}
+\label{sec:5}
+\begin{comment}
+(Propose a method to solve the problem stated in \hyperref[sec:1]{Section 1 Introduction}.)
+\end{comment}
+
+The proposed solution is a full search solution (from crawling to decision-making based on past parsing results) which aims to meet the following requirements:
+\begin{enumerate}
+	\item Memory-efficient crawling of URLs.
+	\item Decide whether to parse a particular web page based on past experience.
+	\item Judge the relevance of content.
+\end{enumerate}
+
+% 5.1
+\subsection{Web Crawling}
+
+\paragraph{Modified DFS}
+\begin{enumerate}
+	\item Push the seed(s) to a stack.
+	\item Repeat steps (3) to (9) until either:
+		\begin{enumerate}
+			\item Stack is empty, or
+			\item Maximum number (user-specified) of iterations is reached.
+		\end{enumerate}
+	\item Pop a URL from the stack.
+	\item Parse the corresponding web page for topics.
+	\item For each topic:
+	\begin{enumerate}
+		\item Get the similarity score between the topic and each search word.
+		\item If the score is sufficient to be deemed as ``relevant", then record the tuple (score, search, topic, url).
+	\end{enumerate}
+	\item Add this URL to a set of visited URLs.
+	\item If this domain has been crawled for the past 3 most recent iterations, then skip steps (8) and (9), and return to step (3). Otherwise, continue with step (8).
+	\item Parse the web page for URLs.
+	\item Push URLs that are not in the set of visited URLs.
+\end{enumerate}
+\newpage
+
+% 5.2
+\subsection{Learning and Related Formulae}
+\label{sec:5.2}
+
+% 5.2.1
+\subsubsection{States}
+The proposed set of states $ S $ are defined as simplified representations of the real-valued features below:
+
+\begin{enumerate}
+\item $ \boldsymbol{N_{pp}} $ $ [0, \infty) $ \\ Total number of web pages belonging to the \textit{previously processed} host name and \textit{parsed}.
+\item $ \boldsymbol{N_{sp}} $ $ [0, \infty) $ \\ Total number of web pages with the \textit{same} host name and \textit{parsed}.
+\item $ \boldsymbol{N_{ss}} $ $ [0, \infty) $ \\ Total number of web pages with the \textit{same} host name and \textit{skipped}.
+\item $ \boldsymbol{R_{prev}} $ $ [0, 1] \Rightarrow [0, \infty) $ \\ Cumulative \textit{relevance} score for content belonging to the \textit{previously processed} host name.
+\item $ \boldsymbol{R_{same}} $ $ [0, 1] \Rightarrow [0, \infty) $ \\ Cumulative \textit{relevance} score for content with the \textit{same} host name.
+\item $ \boldsymbol{R_{url}} $ [0, 1] \\ Relevance of the URL to \textit{any} of the predefined search words, in the form of a list for the set of features, $ F $, i.e. $ [F_0, F_1, F_2, F_3 ...] $.
+\end{enumerate}
+
+From the above information, the mean average for (4) and (5) can be derived readily. Note there can be infinite number of such states due to the infinite cardinality of real numbers. Hence, the above values will be processed to produce simplified representations so that there will be a finite number of states.
+\newpage
+
+The mapping from specific ranges of states to their categorical representation, which will make up the \textit{state}, is as follows:
+
+\begin{enumerate}
+	\item % 1
+\[
+	\text{\textit{Host Parse-Skip Ratio}} = \left\{\begin{array}{ll}
+		True,	& \text{if }  N_{sp} = 0 \\
+				& \text{or } (N_{ss} > 0 \text{ and }\frac{N_{sp}}{N_{ss}} < x) \\
+		False,	& \text{otherwise}
+	\end{array}\right\} \textit{where x = 1}
+\] \\ (\textit{x can be any number greater than or equal to 1}) \\ This feature encourages the decision to parse a particular web page if:
+	\begin{enumerate}
+		\item No web page belonging to the same host was parsed before
+		\item \textbf{Or} web pages belonging to the same host name were mostly skipped.
+	\end{enumerate}
+	This feature discourages the decision to parse a particular web page if:
+	\begin{enumerate}
+		\item Web pages belonging to the same host were parsed before
+		\item \textbf{And} there are more parsed web pages to skipped web pages for this host.
+	\end{enumerate}
+
+	\item % 2
+\[
+	\text{\textit{Mean Avg. Relevance (Previous Host)}} = \left\{\begin{array}{ll}
+		True,	& \text{if }  N_{pp} > 0 \text{ and }\frac{R_{prev}}{T_{prev}} \geq x \\
+		False,	& \text{otherwise}
+	\end{array}\right\} \textit{where x = $ \frac{2}{3} $}
+\] \\ It is assumed that if the previous host was deemed relevant, then its outgoing links (one of which is the current host) are also relevant. As such, (2) is a feature of the state. This feature encourages the decision to parse a particular web page if:
+	\begin{enumerate}
+		\item Web pages belonging to this previous host were parsed and deemed relevant
+	\end{enumerate}
+	This feature discourages the decision to parse a particular web page if:
+	\begin{enumerate}
+		\item Web pages belonging to the previous host were not parsed before
+		\item \textbf{Or} the content of those web pages were parsed before but deemed as irrelevant.
+	\end{enumerate}
+
+	\item % 3
+\[
+	\text{\textit{Mean Avg. Relevance (Current Host)}} = \left\{\begin{array}{ll}
+		True,	& \text{if }  R_{same} = 0 \\
+				& \text{or } (N_{sp} > 0 \text{ and }\frac{R_{same}}{T_{same}} \geq x) \\
+		False,	& \text{otherwise}
+	\end{array}\right\} \textit{where x = $ \frac{2}{3} $}
+\] \\ This feature encourages the decision to parse a particular web page if:
+	\begin{enumerate}
+		\item No web page belonging to the same host was parsed before
+		\item \textbf{Or} web pages belonging to the same host name were parsed and deemed relevant.
+	\end{enumerate}
+	This feature discourages the decision to parse a particular web page if:
+	\begin{enumerate}
+		\item Web pages belonging to the same host were parsed before
+		\item \textbf{And} the content of those web pages were deemed as irrelevant.
+	\end{enumerate}
+
+	\item % 4
+\[
+	\text{\textit{Predicted Relevance via URL}} = \left\{\begin{array}{ll}
+		True,	& \text{if } relevance \geq x \\ \\
+		False,	& \text{otherwise}
+	\end{array}\right\} \textit{where $ x = \frac{2}{3} $}
+\] \\ (\textit{$ x = \frac{2}{3} $ \textit{ was decided via observation}; ``relevance" is defined in \hyperref[sec:5.2.2]{Section 5.2.2 Relevance Score}}) \\ This feature encourages the decision to parse a particular web page if:
+	\begin{enumerate}
+		\item URL is adequately similar (and thus relevant) to \textit{any} of the predefined search words
+	\end{enumerate}.
+	This feature discourages the decision to parse a particular web page if:
+	\begin{enumerate}
+		\item URL is inadequately similar (and thus irrelevant) to \textit{all} of the predefined search words.
+	\end{enumerate}
+\end{enumerate}
+\newpage
+
+% 5.2.2
+\subsubsection{Relevance Score}
+\label{sec:5.2.2}
+Relevance scores in the range $ [0, 1] $ may be calculated based on parsed web content and which can then be associated with a standard set of features in the corresponding URL. These scores play a part in deciding (in the future) if URLs with certain features should have their corresponding contents parsed.
+\medskip
+
+This increases the efficiency of the web crawler while meeting the requirements for a search, especially under time and space constraints, as unnecessary cycles of request and parse are avoided for potentially irrelevant content.
+\medskip
+
+\begin{comment}
+However, caution must be exercised so that the learning hypothesis is not overly-dependent on the seed pages.
+\medskip
+\end{comment}
+
+For the set of $ N_K $ number of keywords in a web page, $ K $, and set of $ N_S $ number of predefined search words, $ S $, the overall relevance score has the following formula:
+
+\begin{enumerate}
+	\item $ relevance = \frac{1}{N_K} \sum^{N_K}_{i = 1}max(similarity(K_i, S)) $
+
+	\item Where % 2
+$ similarity(K_x, S) = $
+\[
+	[\begin{array}{lllll}
+	similarity(K_x, S_0), & similarity(K_x, S_1), & similarity(K_x, S_2), & similarity(K_x, S_3), & ...
+	\end{array}]
+\]
+
+	\item And % 3
+\[
+	similarity(K_x, S_y) = \left\{\begin{array}{ll}
+		0, & \text{if $ similarity(K_x, S_y) <  z $} \\
+		similarity(K_x, S_y), & \text{otherwise}
+	\end{array}\right\} \textit{where z = $ \frac{2}{3} $}
+\]
+\end{enumerate}
+
+% 5.2.3
+\subsubsection{Reward Function}
+\textit{R(s) = Number of simplified features in the state which are True}
+
+% 5.2.4
+\subsubsection{Features of a URL}
+\label{sec:5.2.4}
+Some examples of URLs which could affect the decision of whether to parse the corresponding web page are \cite{bib-11}:
+\begin{enumerate}
+	\item URLs which are way too long $ \Rightarrow $ Deeply nested and irrelevant.
+	\item URLs which indicate non-textual file types $ \Rightarrow $ gif, png, mp3, wmv, ...
+	\item URLs with search queries $ \Rightarrow $ Potentially an advertisement URL.
+	\item URLs with gibberish host names $ \Rightarrow $ Potentially a non-legitimate source.
+	\item URLs with gibberish relative links $ \Rightarrow $ Potentially irrelevant.
+\end{enumerate}
+\newpage
+
+% 5.3
+\subsection{Parsing}
+\label{sec:5.3}
+A corpus can be given a score by extracting its keywords and calculating their similarity to the user-specified search words. The following describes a keyword extraction algorithm, followed by a word/phrase similarity algorithm via the representation of words as vectors.
+
+\paragraph{RAKE (Rapid Automatic Keyword Extraction)\cite{bib-12}}
+\begin{enumerate}
+	\item Download the text.
+	\item Remove punctuation and special characters.
+	\item Remove stop words.
+	\item The set of words separated by stop words are the candidate keywords or key phrases.
+	\item Find the degree of each candidate. The degree of a candidate is the number of times the candidate is used by other candidates.
+	\item Count the frequency of each candidate (with stemming).
+	\item Evaluate the candidate scores (for being a keyword or key phrase) via the formula $ \text{\textit{Score}} = \frac{\text{\textit{Degree}}}{\text{\textit{Frequency}}} $.
+\end{enumerate}
+After RAKE, the following steps are proposed to measure relevance:
+\paragraph{word2vec (Vector Representations of Words) \cite{bib-13}}
+\begin{enumerate}
+	\item Train a word2vec model.
+	\item Process the similarity scores between the keywords and the set of user-specified search words (phrases are permissible).
+\end{enumerate}
+
+% 5.4
+\subsection{Effectiveness}
+\label{sec:5.4}
+\begin{comment}
+(Describe how you will validate the effectiveness of the method.) \\
+\end{comment}
+
+The effectiveness of the proposed solution will be determined by the below criteria, which are numerical values related to the requirements in \hyperref[sec:1]{Section 1 Introduction}:
+\begin{enumerate}
+	\item Number of URLs parsed.
+	\item Number of web pages parsed.
+	\item Cumulative average relevance score of parsed content.
+\end{enumerate}
+\newpage
+
+% 6
+\section{Proposed Implementation}
+\label{sec:6}
+\begin{comment}
+(Implement the method in accordance to \hyperref[sec:5]{Section 5 Proposed Solution} and the validation in accordance to \hyperref[sec:5.4]{Section 5.4 Effectiveness}.)
+\end{comment}
+
+% 6.1
+\subsection{Software Setup}
+\begin{enumerate}
+	\item Anaconda (\url{https://www.continuum.io/}) (Python 3.5)
+	\item Jupyter (\url{http://jupyter.org/})
+	\item Requests (\url{http://docs.python-requests.org/en/master/})
+	\item Beautiful Soup 4 (\url{https://www.crummy.com/software/BeautifulSoup})
+	\item RAKE (\url{https://github.com/aneesha/RAKE})
+	% \item Gibberish Detector (\url{https://github.com/rrenaud/Gibberish-Detector})
+	% \item Scrapy(\url{https://scrapy.org/})
+\end{enumerate}
+(1) and (2) can be downloaded from the corresponding websites, (3) and (4) can be installed via \textit{pip install} or \textit{conda install}, and (5) and (6) can be cloned into local machine from \textit{GitHub}.
+\newpage
+
+% 6.2
+\subsection{Code Snippets}
+
+% 6.2.1
+\subsubsection{BFS}
+\label{sec:6.2.1}
+\textit{From crawl.py}
+\lstinputlisting[firstline=26, lastline=66]{crawl.py}
+\newpage
+
+% 6.2.2
+\subsubsection{Modified DFS}
+\label{sec:6.2.2}
+\textit{From crawl.py}
+\lstinputlisting[firstline=92, lastline=123]{crawl.py}
+\newpage
+
+% 6.2.3
+\subsubsection{RL}
+\textit{From reinforce.py}
+\lstinputlisting[firstline=1, lastline=10]{reinforce.py}
+
+% 6.2.4
+\subsubsection{Parser for URLs}
+\textit{From parse.py}
+\lstinputlisting[firstline=33, lastline=45]{parse.py}
+\newpage
+
+% 6.2.5
+\subsubsection{Parser for Keywords}
+\textit{From parse.py}
+\lstinputlisting[firstline=47, lastline=89]{parse.py}
+\newpage
+
+% 7
+\section{Experiments}
+
+% 7.1
+\subsection{Environment}
+The experiments were conducted on a personal computer with the following specifications:
+\begin{enumerate}
+	\item 2nd generation processor
+	\item 4GB RAM
+	\item Windows 10 Education
+	\item Python 3.5
+	\item Geany IDE
+	\item Jupyter Notebook
+\end{enumerate}
+
+% 7.2
+\subsection{Test Set}
+
+% 7.2.1
+\subsubsection{Seed URLs}
+The seed URLs were first crawled from \url{http://www.alexa.com/topsites/countries/US} as the parser can only process English. It is also desirable for seed URLs to have a considerable number of outgoing links.
+\medskip
+
+For the experiments in this section, \href{http://stackexchange.com/}{Stack Exchange} was the seed for the web crawling algorithm, and \href{https://en.wikipedia.org/wiki/Main_Page}{Wikipedia} was the seed for the parsing algorithm.
+
+% 7.2.2
+\subsubsection{Search Words}
+This paper assumes that a web page with content related to popular search words is a relevant web page.
+\medskip
+
+A list of popular search words (as declared by the source) were crawled from \url{http://www.pagetraffic.com/blog/most-popular-keywords-on-search-engines}.
+\newpage
+
+% 7.3
+\subsection{Results}
+
+% 7.3.1
+\subsubsection{Runtime Analysis for Modified DFS}
+\label{sec:7.3.1}
+\textit{From memory.py}
+\lstinputlisting[firstline=2, lastline=30]{memory.py}
+
+The modified DFS has a consistently lower time and space complexity than BFS, as the modified DFS does not always push to the stack, as explained in \hyperref[sec:3.6]{Section 3.6 Insights and Decisions} and implemented in \hyperref[sec:6.2.2]{Section 6.2.2 Modified DFS}. Measurements should be read as approximate and relative indications rather than absolute values as the computer may have varying loads from other processes throughout the execution.
+
+\subparagraph{Additional Note} The BFS in \hyperref[sec:6.2.1]{Section 6.2.1} is different from the BFS used to compare against DFS here. The BFS used for comparison can be found in Lines 69 to 90 of \textit{crawl.py}.
+\newpage
+
+% 7.3.2
+\subsubsection{RL}
+\label{sec:7.3.2}
+The states, actions, and rewards defined in \hyperref[sec:5.2]{Section 5.2 Learning and Other Formulae} were passed into \href{https://github.com/NathanEpstein/reinforce}{Epstein's library for reinforcement learning}. The policy that was computed encourages the agent to do the ``False" action in every state. This means the crawler will always never parse any web page.
+\medskip
+
+\textit{From reinforce.py}
+\lstinputlisting[firstline=14, lastline=31]{reinforce.py}
+
+Increasing the penalty (by decreasing the reward) of choosing the ``False" action and increasing $ \gamma $ to 1 did not lead to any changes in the policy.
+\newpage
+
+% 7.3.3
+\subsubsection{Output from \hyperref[sec:6.2.1]{Section 6.2.1}}
+\label{sec:7.3.3}
+The outermost keys are keywords found in the web page, and the inner keys are the popular search words which are deemed similar to the keywords in the web page; the values are the similarity scores.
+\medskip
+
+\textit{From SampleSimilarity.json}
+\lstinputlisting[firstline=1, lastline=35]{SampleSimilarity.json}
+...
+\newpage
+
+% 8
+\section{Analysis}
+\begin{comment}
+(Analyze and discuss the outcome in \hyperref[sec:6]{Section 6 Proposed Implementation}.)
+\end{comment}
+
+% 8.1
+\subsection{Graph Exploration/Web Crawling}
+In \hyperref[sec:7.3.1]{Section 7.3.1 Runtime Analysis for Modified DFS}, modified DFS has shown to significantly reduce the execution time and memory usage for the same number of iterations and URLs visited, compared to BFS.
+\medskip
+
+This comparison may also be extended to the original DFS, as the original DFS will always push to the stack and increase memory usage. Pushing to the stack also costs a significant amount of time, because every URL has to be checked against the set of visited URLs to prevent duplicate requests.
+
+% 8.2
+\subsection{RL}
+While the states and actions were well-defined in \hyperref[sec:5.2]{Section 5.2 Learning and Related Formulae}, the actual state transition probabilities are unknown and can have a large variance due to the diverse nature of the World Wide Web. In addition, the generalisation of states might not have expressed the actual state well and might have led to a less meaningful representation instead.
+\medskip
+
+Furthermore, the value function is dependent on a sequence of actions. This increases the weight of the seed URL, thereby rewarding more on the choice of seed URL, and on the immediate discoveries after the seed URL, than on a per-relevant-discovery basis. In \hyperref[sec:7.3.2]{Section 7.3.2}, $ \gamma $ was increased to 1 so that all rewards at different points of time have the same weight. However, the policy remained the same.
+\newpage
+
+% 8.3
+\subsection{Parsing}
+\hyperref[sec:5.3]{RAKE} has been successful in extracting important words, although some noise, such as titles, footers, and other extra content remained.
+\medskip
+
+However, such filtering and stemming may not be sufficient when these keywords may become too general and matching them to their specific counterparts in the search words list may become less meaningful.
+\medskip
+
+In a search, users strive to be more specific so that the search engine will yield specific results. As such, a keyword should only be deemed as relevant if it has a greater than or equal level of specificity compared to the search words.
+\medskip
+
+On the other hand, in the word2vec model, keywords such as ``music" still had a high similarity to the search words ``classical music" (see \hyperref[sec:7.3.3]{Section 7.3.3 Output from Section 6.2.1}). This could be due to word2vec measuring the absolute distance between the vector representations of the words.
+\medskip
+
+Moreover, the threshold of $ \frac{2}{3} $ has no upper bound. Exact words will have the maximum similarity score of 1. This means that the threshold is encouraging an overfit of similarity, since exact words are much more likely to be deemed as relevant, compared to words which are different in form but related in meaning. Hence, to prevent such bias, \hyperref[sec:6.2.2]{Section 6.2.2 Modified DFS} implements arbitrary bounds on the threshold (i.e. $ \frac{3}{5} < \text{\textit{relevant}} <\frac{4}{5} $).
+\newpage
+
+% 9
+\section{Future Work}
+Despite unfavourable results, the proposed solutions and implementations in this paper have led to other new possibilities in solving the web crawling problem.
+
+% 9.1
+\subsection{Refining RL}
+The proposed usage of RL in this paper may not be suitable due to the abundance of unknown variables. However, a model-free and unbiased RL technique (Q-learning) may have the potential to enhance this decision-making process as it allows infinite state spaces and unknown state transition probabilities.
+
+% 9.2
+\subsection{Learning from something else (URL)}
+The URL is the most easily attainable information about a web page without visiting it. \hyperref[sec:5.2.4]{Section 5.2.4 Features of a URL} could be expanded to further influence the decision of whether to parse a particular web page.
+\medskip
+
+Moreover, since the URLs are the edges in the graph of the World Wide Web, the strength of the classification of these URLs could be the heuristic in beam search, discussed in \hyperref[sec:3.4]{Section 3.4 Beam Search}. This means that the more relevant content are likely to be parsed first, assuming relevant URL $ \Rightarrow $ relevant content.
+
+% 9.3
+\subsection{Learning from others}
+Insights from expert knowledge or other web crawlers may be added to the web crawler's knowledge base and help the crawler make informed choices. Preprocessing decisions based on existing data may also lead to more efficient runtime as there will be less online learning. Some of such insights can be in the form of whitelists, blacklists, or other naming conventions in URL or page titles.
+
+% 9.4
+\subsection{Refining Parser}
+The current parser parses for all HTML text, and this may lead to noise in the content, such as titles, footers, and other extra content. The parser could be more efficient by avoiding information enclosed in certain HTML tags, such as $<$title$>$, $<$footer$>$, and so on.
+
+% 9.5
+\subsection{Parallelism}
+It is observed that decision making and parsing can be separate processes, as the former writes to a data structure containing to a list of URLs to have their content parsed, and the latter can read from this list to get the next web page to parse. Separating such processes and parallelising them will speed up the execution significantly due to less frequent context switching. This allows the web crawler to take on a larger load.
+\newpage
+
+% 10
+\section{Conclusion}
+There are numerous components to consider when creating or optimising a web crawler. This paper has only discussed the major components of the crawling process, while proposing an improvement by deciding whether some web pages should be downloaded and parsed, without having parsed them before. Beyond crawling, other components which should be considered include storage of parsed material, results, and retrieval (i.e. indexing).
+\newpage
+
+\begin{thebibliography}{20}
+% bib-01
+\bibitem{bib-01}
+  Wikipedia,
+  \emph{\href{https://en.wikipedia.org/wiki/Distributed_web_crawling}{Distributed Web Crawling - Wikipedia, the free encyclopedia}},
+  2016, May 29.
+
+% bib-02
+\bibitem{bib-02}
+  Deo N. \& Gupta P.,
+  \emph{\href{http://wortschatz.uni-leipzig.de/~fwitschel/vorlP2P/literatur/Gupta.pdf}{World Wide Web: A Graph-Theoretic Perspective}},
+  2016, July 2.
+
+% bib-03
+\bibitem{bib-03}
+  Pandit, D.,
+  \emph{\href{http://stackoverflow.com/questions/11775256/bfs-or-dfs-for-a-web-crawler}{BFS or DFS for a Web Crawler? - Stack Overflow}},
+  2013, February 18.
+
+% bib-04
+\bibitem{bib-04}
+  Kulkarni, M., \& Patil, S.,
+  \emph{\href{https://www.quora.com/Which-traversal-is-better-for-Web-Crawling-DFS-or-BFS-and-Why}{Which Traversal is Better for Web Crawling? DFS or BFS, and Why? - Quora}},
+  March 26.
+
+% bib-05
+\bibitem{bib-05}
+  Andersson G.,
+  \emph{\href{http://stackoverflow.com/questions/23477856/why-does-a-breadth-first-search-use-more-memory-than-depth-first}{Why does BFS use more memory than DFS? - Stack Overflow}},
+  2014, May 5.
+  
+% bib-06
+\bibitem{bib-06}
+  Kumar et al.,
+  Section 3.4,
+  \emph{\href{http://cs.brown.edu/research/webagent/pods-2000.pdf}{The Web as a Graph}},
+  2000.  
+
+% bib-07
+\bibitem{bib-07}
+  Blum A.,
+  \emph{\href{https://www.cs.cmu.edu/~avrim/ML14/lect0326.pdf}{Reinforcement Learning and Markov Decision Processes (MDPs)}},
+  2014, March 27.
+
+% bib-08
+\bibitem{bib-08}
+  Ng A.,
+  Part XIII,
+  \emph{\href{http://cs229.stanford.edu/notes/cs229-notes12.pdf}{Reinforcement Learning and Control}},
+  2016, August.
+
+% bib-09
+\bibitem{bib-09}
+  Murphy K.,
+  \emph{\href{http://www.cs.ubc.ca/~murphyk/Bayes/pomdp.html}{A brief introduction to reinforcement learning}},
+  1998.
+
+% bib-10
+\bibitem{bib-10}
+	Frazzoli E.,
+	Lecture 23: Markov Decision Processes - Policy Iteration
+	\emph{\href{https://ocw.mit.edu/courses/aeronautics-and-astronautics/16-410-principles-of-autonomy-and-decision-making-fall-2010/lecture-notes/MIT16_410F10_lec23.pdf}{Principles of Autonomy and Decision Making}},
+	2010, December 1.
+
+% bib-11
+\bibitem{bib-11}
+  Kan M., Nguyen T.,
+  \emph{\href{https://www.comp.nus.edu.sg/~kanmy/papers/nustrc8_05.pdf}{Fast web page classification using URL features }},
+  2005.
+
+% bib-12
+\bibitem{bib-12}
+	Atli A.,
+	\emph{\href{https://www.quora.com/What-are-the-best-keyword-extraction-algorithms-for-natural-language-processing-and-how-can-they-be-implemented-in-Python}{What are the best keyword extraction algorithms? - Quora}},
+	2015, January 31.
+
+% bib-13
+\bibitem{bib-13}
+	Mikolov et al.,
+	\emph{\href{http://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf}{Distributed Representations of Words and Phrases and their Compositionality}},
+	2013.
+\end{thebibliography}
+\end{document}

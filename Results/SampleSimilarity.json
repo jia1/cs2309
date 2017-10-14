@@ -1,0 +1,127 @@
+[
+  [
+    "",
+    {
+      "": "",
+      "['william', 'jennings', 'bryan']": [
+        "(['jennifer', 'aniston'], 0.715375311301)",
+        "(['jessica', 'simpson'], 0.707228508771)",
+        "(['emma', 'watson'], 0.75140799662)",
+        "(['justin', 'bieber'], 0.688868523925)",
+        "(['lisa', 'ann'], 0.703440565176)",
+        "(['brooke', 'burke'], 0.759845816284)",
+        "(['casey', 'anthony'], 0.778917461542)",
+        "(['amanda', 'knox'], 0.731735006866)",
+        "(['alexis', 'texas'], 0.71553821859)",
+        "(['jenny', 'mccarthy'], 0.709436693434)",
+        "(['pamela', 'anderson'], 0.730096377937)",
+        "(['jennifer', 'walcott'], 0.765803294461)",
+        "(['sarah', 'palin'], 0.705588316234)"
+      ],
+      "['free', 'travel', 'guide']": [
+        "(['travel'], 0.701035129669)"
+      ],
+      "['free', 'textbooks']": [
+        "(['used', 'textbooks'], 0.777232581809)"
+      ],
+      "['free', 'silver']": [
+        "(['free'], 0.674772488876)"
+      ],
+      "['car', 'crash']": [
+        "(['car'], 0.75632134745)"
+      ],
+      "['classical', 'music']": [
+        "(['music'], 0.866416812575)"
+      ],
+      "['special', 'pages']": [
+        "(['white', 'pages'], 0.699553037391)",
+        "(['yellow', 'pages'], 0.674397156967)"
+      ],
+      "['site', 'news']": [
+        "(['news'], 0.795637124816)"
+      ],
+      "['contact', 'wikipedia']": [
+        "(['wikipedia'], 0.783553549533)"
+      ],
+      "['wikipedia', 'store']": [
+        "(['wikipedia'], 0.792162788236)"
+      ],
+      "['wikipedia', 'languages']": [
+        "(['wikipedia'], 0.748539526366)"
+      ],
+      "['free']": [
+        "(['free'], 1.0)",
+        "(['free', 'games'], 0.705764801414)"
+      ],
+      "['bryan']": [
+        "(['jennifer', 'aniston'], 0.684984369182)",
+        "(['jessica', 'simpson'], 0.668178896852)",
+        "(['emma', 'watson'], 0.693859760849)",
+        "(['brooke', 'burke'], 0.725825339169)",
+        "(['casey', 'anthony'], 0.715198315051)",
+        "(['amanda', 'knox'], 0.697227318708)",
+        "(['jenny', 'mccarthy'], 0.679677284907)",
+        "(['pamela', 'anderson'], 0.695884473917)",
+        "(['jennifer', 'walcott'], 0.704421409573)"
+      ],
+      "['travel']": [
+        "(['travel'], 1.0)"
+      ],
+      "['news']": [
+        "(['fox', 'news'], 0.712289183094)",
+        "(['news'], 1.0)",
+        "(['bbc', 'news'], 0.682172339)",
+        "(['cnn', 'news'], 0.758023285398)",
+        "(['breaking', 'news'], 0.769541787335)",
+        "(['abc', 'news'], 0.687281236407)"
+      ],
+      "['tools']": [
+        "(['gardening', 'tools'], 0.720481537044)"
+      ],
+      "['wikipedia']": [
+        "(['wikipedia'], 1.0)"
+      ],
+      "['dictionary']": [
+        "(['dictionary'], 1.0)"
+      ],
+      "['asian']": [
+        "(['asian'], 1.0)"
+      ],
+      "['directory']": [
+        "(['sublime', 'directory', 'com'], 0.679523495136)"
+      ],
+      "['collection']": [
+        "(['dark', 'collection'], 0.730085381339)"
+      ],
+      "['thesaurus']": [
+        "(['dictionary'], 0.690366629782)"
+      ],
+      "['archive']": [
+        "(['nifty', 'archive'], 0.828430262342)"
+      ],
+      "['search']": [
+        "(['google', 'search'], 0.807584518942)",
+        "(['search', 'engines'], 0.733366659736)",
+        "(['search', 'engine', 'list'], 0.703649445329)",
+        "(['people', 'search'], 0.816876977125)",
+        "(['search'], 1.0)"
+      ],
+      "['home']": [
+        "(['home'], 1.0)"
+      ],
+      "['book']": [
+        "(['face', 'book'], 0.727809296395)",
+        "(['book', 'clubs'], 0.706624536424)"
+      ],
+      "['rings']": [
+        "(['engagement', 'rings'], 0.736593843234)"
+      ],
+      "['log']": [
+        "(['facebook', 'log', 'in'], 0.77684717428)"
+      ],
+      "['email']": [
+        "(['hotmail', 'email'], 0.803760584642)"
+      ]
+    }
+  ]
+]
